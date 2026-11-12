@@ -1,0 +1,59 @@
+/* Theme Script Link: 테마 색을 따라가도록 실리태번 기본 변수만 사용 */
+.tsl .tsl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 4px 0 8px; }
+.tsl .tsl-row .menu_button { margin: 0; }
+.tsl .tsl-now { margin: 2px 0 8px; opacity: 0.8; font-size: 0.92em; }
+.tsl .tsl-now b { margin-left: 6px; opacity: 1; }
+.tsl .tsl-warn:not(:empty) { margin: 6px 0; color: var(--warning, #d9822b); font-size: 0.9em; }
+.tsl .tsl-empty { padding: 10px 2px; opacity: 0.65; font-size: 0.9em; }
+.tsl .tsl-note { display: block; margin-top: 10px; opacity: 0.65; line-height: 1.5; }
+
+.tsl .tsl-tools input[type=search] { flex: 1 1 auto; margin: 0; min-width: 0; }
+.tsl .tsl-tools { flex-wrap: nowrap; }
+
+.tsl .tsl-rule {
+  margin: 6px 0;
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.tsl .tsl-rule.tsl-active { border-color: var(--SmartThemeQuoteColor); box-shadow: inset 3px 0 0 var(--SmartThemeQuoteColor); }
+.tsl .tsl-rule-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; user-select: none; }
+.tsl .tsl-rule-head:hover { background: color-mix(in srgb, var(--SmartThemeBodyColor) 6%, transparent); }
+.tsl .tsl-chev { flex: 0 0 auto; font-size: 0.75em; opacity: 0.55; transition: transform 0.15s; }
+.tsl .tsl-open .tsl-chev { transform: rotate(90deg); }
+.tsl .tsl-rule-title { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.tsl .tsl-rule-title b, .tsl .tsl-rule-title small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tsl .tsl-rule-title small { opacity: 0.6; }
+.tsl .tsl-flag { color: var(--warning, #d9822b); font-size: 0.85em; }
+.tsl .tsl-badge { flex: 0 0 auto; padding: 1px 8px; border-radius: 999px; font-size: 0.76em; background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBlurTintColor); }
+
+.tsl .tsl-body { padding: 2px 12px 12px; border-top: 1px solid var(--SmartThemeBorderColor); }
+.tsl .tsl-label-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.tsl .tsl-label-row input { flex: 1 1 auto; margin: 0; }
+.tsl .tsl-label-row .tsl-del { flex: 0 0 auto; margin: 0; }
+.tsl .tsl-sub { margin: 12px 0 6px; font-size: 0.78em; letter-spacing: 0.08em; opacity: 0.6; }
+.tsl .tsl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tsl .tsl-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 6px 2px 10px; border-radius: 999px; border: 1px solid var(--SmartThemeBorderColor); font-size: 0.9em; }
+.tsl .tsl-chip-now { border-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeQuoteColor); }
+.tsl .tsl-chip-missing { border-style: dashed; color: var(--warning, #d9822b); }
+.tsl .tsl-chip-x { cursor: pointer; opacity: 0.5; font-size: 0.85em; padding: 0 2px; }
+.tsl .tsl-chip-x:hover { opacity: 1; }
+.tsl .tsl-addtheme { margin: 8px 0 0; width: 100%; }
+.tsl .tsl-scripts { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
+.tsl .tsl-script { display: flex; align-items: center; gap: 8px; padding: 3px 2px; cursor: pointer; }
+.tsl .tsl-script input { margin: 0; }
+.tsl .tsl-script .tsl-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tsl .tsl-script .tsl-name em { opacity: 0.55; font-style: normal; }
+.tsl .tsl-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.18; }
+.tsl .tsl-script.tsl-on .tsl-dot { background: var(--SmartThemeQuoteColor); opacity: 1; }
+.tsl .tsl-lost { margin-top: 6px; font-size: 0.86em; color: var(--warning, #d9822b); }
+.tsl .tsl-x { cursor: pointer; margin-left: 6px; opacity: 0.7; }
+.tsl .tsl-x:hover { opacity: 1; }
+
+.tsl .tsl-pager { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 8px 0 2px; flex-wrap: wrap; }
+.tsl .tsl-pager .menu_button { margin: 0; padding: 4px 8px; }
+.tsl .tsl-pager .menu_button[data-off] { opacity: 0.25; pointer-events: none; }
+.tsl .tsl-pgn { min-width: 24px; padding: 2px 6px; text-align: center; border-radius: 6px; cursor: pointer; opacity: 0.6; }
+.tsl .tsl-pgn:hover { opacity: 1; }
+.tsl .tsl-pgn-on { opacity: 1; font-weight: 700; background: color-mix(in srgb, var(--SmartThemeBodyColor) 12%, transparent); }
+.tsl .tsl-pager small { margin-left: 8px; opacity: 0.55; }
