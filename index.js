@@ -186,6 +186,7 @@
       </div>
       <div class="tsl-row tsl-tools">
         <input id="tsl_search" class="text_pole" type="search" placeholder="테마·스크립트 이름으로 찾기">
+        <div id="tsl_sort" class="menu_button menu_button_icon" title="이름순으로 정렬"><i class="fa-solid fa-arrow-down-a-z"></i></div>
         <div id="tsl_fold" class="menu_button menu_button_icon" title="모두 접기"><i class="fa-solid fa-angles-up"></i></div>
       </div>
       <div id="tsl_warn" class="tsl-warn"></div>
@@ -226,7 +227,15 @@
         open.add(rule.uid);
     }
 
+    /* 다시 그리기는 항상 한 박자 늦게 한다.
+       클릭한 요소를 그 자리에서 지워 버리면, 실리태번이 "패널 바깥을 눌렀다"고 보고 패널을 닫기 때문. */
+    let renderQueued = false;
     function renderRules() {
+        if (renderQueued) return;
+        renderQueued = true;
+        setTimeout(() => { renderQueued = false; renderNow(); }, 0);
+    }
+    function renderNow() {
         const box = document.getElementById('tsl_rules');
         if (!box) return;
         const s = settings();
@@ -260,6 +269,7 @@
             const scriptNames = rule.scripts.map((r) => r.name);
             const head = `
           <div class="tsl-rule-head" data-uid="${esc(rule.uid)}">
+            <i class="fa-solid fa-grip-vertical tsl-grip" draggable="true" data-rule="${ri}" title="끌어서 순서 바꾸기"></i>
             <i class="fa-solid fa-chevron-right tsl-chev"></i>
             <div class="tsl-rule-title">
               <b>${esc(ruleTitle(rule))}</b>
@@ -267,9 +277,13 @@
             </div>
             ${missingThemes.length ? '<i class="fa-solid fa-triangle-exclamation tsl-flag" title="없는 테마가 있습니다"></i>' : ''}
             ${active ? '<span class="tsl-badge">사용 중</span>' : ''}
+            <span class="tsl-moves">
+              <i class="fa-solid fa-chevron-up tsl-move" data-rule="${ri}" data-dir="-1" title="위로"${ri === 0 ? ' data-off="1"' : ''}></i>
+              <i class="fa-solid fa-chevron-down tsl-move" data-rule="${ri}" data-dir="1" title="아래로"${ri === s.rules.length - 1 ? ' data-off="1"' : ''}></i>
+            </span>
           </div>`;
             if (!isOpen) {
-                return `<div class="tsl-rule${active ? ' tsl-active' : ''}">${head}</div>`;
+                return `<div class="tsl-rule${active ? ' tsl-active' : ''}" data-rule="${ri}">${head}</div>`;
             }
 
             const chips = rule.themes.map((t) => `
@@ -278,8 +292,7 @@
             </span>`).join('');
             // 이미 어느 묶음에든 들어 있는 테마는 목록에서 뺀다 (테마 하나 = 묶음 하나)
             const taken = new Set(s.rules.flatMap((r) => r.themes));
-            const addOpts = themes.filter((t) => !taken.has(t))
-                .map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+            const free = themes.filter((t) => !taken.has(t));
             const ids = new Set(rule.scripts.map((r) => r.id));
             const rows = list.map((sc) => `
             <label class="tsl-script${sc.enabled && sc.folderEnabled ? ' tsl-on' : ''}">
@@ -291,7 +304,7 @@
                 .map((r) => `<div class="tsl-lost">찾을 수 없는 스크립트: ${esc(r.name)} <span class="tsl-x" data-rule="${ri}" data-lost="${esc(r.id)}" title="묶음에서 빼기">✕</span></div>`).join('');
 
             return `
-        <div class="tsl-rule tsl-open${active ? ' tsl-active' : ''}">
+        <div class="tsl-rule tsl-open${active ? ' tsl-active' : ''}" data-rule="${ri}">
           ${head}
           <div class="tsl-body">
             <div class="tsl-label-row">
@@ -300,7 +313,12 @@
             </div>
             <div class="tsl-sub">테마</div>
             <div class="tsl-chips">${chips || '<span class="tsl-empty">테마를 추가하세요.</span>'}</div>
-            ${addOpts ? `<select class="text_pole tsl-addtheme" data-rule="${ri}"><option value="">＋ 테마 추가…</option>${addOpts}</select>` : ''}
+            ${free.length ? `
+            <div class="tsl-add">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input class="text_pole tsl-addsearch" type="search" data-rule="${ri}" data-uid="${esc(rule.uid)}" placeholder="테마 이름으로 찾아 추가" autocomplete="off">
+              <div class="tsl-addlist" data-rule="${ri}"></div>
+            </div>` : '<div class="tsl-empty">추가할 수 있는 테마가 없습니다.</div>'}
             <div class="tsl-sub">켤 스크립트</div>
             <div class="tsl-scripts">${rows || '<div class="tsl-empty">전역 스크립트가 없습니다.</div>'}</div>
             ${lost}
@@ -314,6 +332,11 @@
           ${Array.from({ length: pages }, (_, n) => `<span class="tsl-pgn${n === page ? ' tsl-pgn-on' : ''}" data-go="${n}">${n + 1}</span>`).join('')}
           <div class="menu_button fa-solid fa-chevron-right tsl-pg" data-go="${page + 1}"${page === pages - 1 ? ' data-off="1"' : ''}></div>
           <small>${shown.length}개 묶음</small>` : (shown.length > 1 ? `<small>${shown.length}개 묶음</small>` : '');
+        }
+        if (refocus) {
+            const inp = box.querySelector(`input.tsl-addsearch[data-uid="${refocus}"]`);
+            refocus = null;
+            if (inp) inp.focus();
         }
     }
 
@@ -329,6 +352,82 @@
     function newRule(themes, scripts) {
         return { uid: 'g' + Math.random().toString(36).slice(2, 10), label: '', themes, scripts };
     }
+    /* ---------- 테마 고르기: 검색 + 체크로 여러 개 ---------- */
+    const picks = new Map(); // 묶음 uid → 체크한 테마들
+    function freeThemes(q) {
+        const taken = new Set(settings().rules.flatMap((r) => r.themes));
+        const needle = q.trim().toLowerCase();
+        const all = themeNames().filter((t) => !taken.has(t));
+        if (!needle) return all;
+        const starts = all.filter((t) => t.toLowerCase().startsWith(needle));
+        const has = all.filter((t) => !t.toLowerCase().startsWith(needle) && t.toLowerCase().includes(needle));
+        return [...starts, ...has];
+    }
+    function pickSet(uid) {
+        if (!picks.has(uid)) picks.set(uid, new Set());
+        return picks.get(uid);
+    }
+    function showFree(input) {
+        const list = input.parentNode.querySelector('.tsl-addlist');
+        if (!list) return;
+        const uid = input.dataset.uid;
+        const chosen = pickSet(uid);
+        const hits = freeThemes(input.value);
+        // 다른 곳에서 묶음에 들어간 테마는 체크에서 정리
+        for (const t of [...chosen]) if (!freeThemes('').includes(t)) chosen.delete(t);
+        const rows = hits.length
+            ? hits.map((t, i) => `
+              <div class="tsl-addhit${i === 0 && !chosen.size ? ' tsl-addfirst' : ''}${chosen.has(t) ? ' tsl-picked' : ''}" data-theme="${esc(t)}">
+                <span class="tsl-box" title="여러 개 고르기"><i class="fa-solid fa-check"></i></span>
+                <span class="tsl-addname">${esc(t)}</span>
+              </div>`).join('')
+            : '<div class="tsl-addnone">맞는 테마가 없습니다.</div>';
+        const foot = chosen.size
+            ? `<div class="tsl-addfoot"><span>${chosen.size}개 선택</span><span class="tsl-addclear">선택 해제</span><div class="menu_button tsl-addmany">추가</div></div>`
+            : `<div class="tsl-addfoot tsl-addhint"><span>${hits.length}개 · 이름을 누르면 바로 추가, 왼쪽 칸은 여러 개 고르기</span></div>`;
+        const prev = list.querySelector('.tsl-addrows');
+        const keep = prev ? prev.scrollTop : 0;
+        list.innerHTML = `<div class="tsl-addrows">${rows}</div>${foot}`;
+        list.classList.add('tsl-show');
+        if (keep) list.querySelector('.tsl-addrows').scrollTop = keep;
+    }
+    let refocus = null;
+    function addThemes(ri, themes) {
+        const rule = settings().rules[ri];
+        if (!rule || !themes.length) return;
+        for (const t of themes) if (!rule.themes.includes(t)) rule.themes.push(t);
+        picks.delete(rule.uid);
+        refocus = rule.uid;
+        afterEdit();
+    }
+
+    /* ---------- 순서 바꾸기 ---------- */
+    let dragFrom = -1;
+    function followTo(index) {
+        // 옮긴 묶음이 다른 쪽으로 넘어가면 그 쪽을 보여 준다 (검색 중이 아닐 때)
+        if (!query.trim()) page = Math.floor(index / settings().pageSize);
+    }
+    function moveRule(i, dir) {
+        const rules = settings().rules;
+        const j = i + dir;
+        if (!rules[i] || j < 0 || j >= rules.length) return;
+        [rules[i], rules[j]] = [rules[j], rules[i]];
+        followTo(j);
+        save();
+        renderRules();
+    }
+    function dropRule(from, to, after) {
+        const rules = settings().rules;
+        if (!rules[from] || !rules[to] || from === to) { renderRules(); return; }
+        const [item] = rules.splice(from, 1);
+        let at = to > from ? to - 1 : to;
+        if (after) at += 1;
+        rules.splice(at, 0, item);
+        followTo(at);
+        save();
+        renderRules();
+    }
+
     /** 묶음을 고친 뒤: 지금 테마와 관련 있으면 바로 반영 */
     function afterEdit() {
         save();
@@ -378,6 +477,14 @@
         $('#tsl_apply').on('click', () => { lastTheme = currentTheme(); apply(lastTheme); renderRules(); });
         $('#tsl_search').on('input', function () { query = this.value; page = 0; renderRules(); });
         $('#tsl_fold').on('click', () => { open.clear(); renderRules(); });
+        $('#tsl_sort').on('click', () => {
+            if (!s.rules.length) return;
+            if (!confirm('묶음을 이름순(가나다·ABC)으로 정렬할까요?')) return;
+            s.rules.sort((a, b) => ruleTitle(a).localeCompare(ruleTitle(b), 'ko', { numeric: true, sensitivity: 'base' }));
+            page = 0;
+            save();
+            renderRules();
+        });
 
         $('#tsl_pager').on('click', '[data-go]', function () {
             if (this.dataset.off) return;
@@ -386,7 +493,8 @@
         });
 
         $('#tsl_rules')
-            .on('click', '.tsl-rule-head', function () {
+            .on('click', '.tsl-rule-head', function (e) {
+                if (e.target.closest('.tsl-grip, .tsl-moves')) return;
                 const uid = this.dataset.uid;
                 if (open.has(uid)) open.delete(uid); else open.add(uid);
                 renderRules();
@@ -399,11 +507,48 @@
                 if (this.checked) rule.scripts.push({ id, name: this.dataset.name });
                 afterEdit();
             })
-            .on('change', 'select.tsl-addtheme', function () {
-                const rule = s.rules[Number(this.dataset.rule)];
-                if (!rule || !this.value) return;
-                if (!rule.themes.includes(this.value)) rule.themes.push(this.value);
-                afterEdit();
+            .on('focus input', 'input.tsl-addsearch', function () {
+                const rows = this.parentNode.querySelector('.tsl-addrows');
+                if (rows) rows.scrollTop = 0; // 검색어가 바뀌면 맨 위부터
+                showFree(this);
+            })
+            .on('blur', 'input.tsl-addsearch', function () {
+                const list = this.parentNode.querySelector('.tsl-addlist');
+                setTimeout(() => { if (list && document.activeElement !== this) list.classList.remove('tsl-show'); }, 150);
+            })
+            .on('keydown', 'input.tsl-addsearch', function (e) {
+                const ri = Number(this.dataset.rule);
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const chosen = [...pickSet(this.dataset.uid)];
+                    if (chosen.length) addThemes(ri, chosen);
+                    else { const first = freeThemes(this.value)[0]; if (first) addThemes(ri, [first]); }
+                } else if (e.key === 'Escape') {
+                    this.value = '';
+                    picks.delete(this.dataset.uid);
+                    this.blur();
+                }
+            })
+            // 목록 안을 눌러도 검색 칸의 커서를 놓치지 않게
+            .on('mousedown', '.tsl-addlist', function (e) { e.preventDefault(); })
+            .on('click', '.tsl-addlist', function (e) {
+                e.stopPropagation();
+                const input = this.parentNode.querySelector('input.tsl-addsearch');
+                const ri = Number(this.dataset.rule);
+                const uid = input.dataset.uid;
+                const chosen = pickSet(uid);
+                const t = e.target;
+                const hit = t.closest('.tsl-addhit');
+                if (t.closest('.tsl-addmany')) { addThemes(ri, [...chosen]); return; }
+                if (t.closest('.tsl-addclear')) { chosen.clear(); showFree(input); return; }
+                if (!hit) return;
+                const theme = hit.dataset.theme;
+                if (t.closest('.tsl-box')) {
+                    if (chosen.has(theme)) chosen.delete(theme); else chosen.add(theme);
+                    showFree(input);
+                    return;
+                }
+                addThemes(ri, [theme]);
             })
             .on('click', '.tsl-chip-x', function (e) {
                 e.stopPropagation();
@@ -411,6 +556,38 @@
                 if (!rule) return;
                 rule.themes = rule.themes.filter((t) => t !== this.dataset.theme);
                 afterEdit();
+            })
+            .on('click', '.tsl-move', function (e) {
+                e.stopPropagation();
+                moveRule(Number(this.dataset.rule), Number(this.dataset.dir));
+            })
+            .on('dragstart', '.tsl-grip', function (e) {
+                dragFrom = Number(this.dataset.rule);
+                const card = this.closest('.tsl-rule');
+                card.classList.add('tsl-dragging');
+                e.originalEvent.dataTransfer.effectAllowed = 'move';
+                try { e.originalEvent.dataTransfer.setData('text/plain', String(dragFrom)); e.originalEvent.dataTransfer.setDragImage(card, 20, 20); } catch (err) { /* 무시 */ }
+            })
+            .on('dragend', '.tsl-grip', function () {
+                dragFrom = -1;
+                $('#tsl_rules .tsl-dragging, #tsl_rules .tsl-drop-before, #tsl_rules .tsl-drop-after').removeClass('tsl-dragging tsl-drop-before tsl-drop-after');
+            })
+            .on('dragover', '.tsl-rule', function (e) {
+                if (dragFrom < 0) return;
+                e.preventDefault();
+                const r = this.getBoundingClientRect();
+                const after = e.originalEvent.clientY > r.top + r.height / 2;
+                $('#tsl_rules .tsl-drop-before, #tsl_rules .tsl-drop-after').removeClass('tsl-drop-before tsl-drop-after');
+                this.classList.add(after ? 'tsl-drop-after' : 'tsl-drop-before');
+            })
+            .on('drop', '.tsl-rule', function (e) {
+                if (dragFrom < 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const to = Number(this.dataset.rule);
+                const after = this.classList.contains('tsl-drop-after');
+                dropRule(dragFrom, to, after);
+                dragFrom = -1;
             })
             .on('change', 'input.tsl-label', function () {
                 const rule = s.rules[Number(this.dataset.rule)];
